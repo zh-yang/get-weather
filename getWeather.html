@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>getWeather</title>
+	<script src="jquery-1.11.3.min.js"></script>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			color: #666;
+		}
+		.clearfix::after {
+			content: "";
+			display: block;
+			clear: both;
+		}
+		ul {
+			list-style: none;
+		}
+		html,body,#wrap {
+			height: 100%;
+			overflow: hidden;
+		}
+		#cover {
+			position: absolute;
+			top: -10px;
+			left: -10px;
+			bottom: -10px;
+			right: -10px;
+			z-index: -1;
+			filter: blur(5px);
+			background: rgba(30,30,30,0.5)
+									url(wea-bg.jpg) no-repeat;
+			background-size: cover;
+		}
+		#cover::before {
+			content: "";
+			display: block;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(100,100,100,0.3);
+		}
+		.control {
+			width: 20%;
+			margin: 0 auto ;
+			text-align: center;
+			font-size: 100px;
+			line-height: 80px;
+			cursor: pointer;
+		}
+		.control>#add {
+			color: rgb(50,200,200);
+		}
+		.control>#go-right,
+		.control>#go-left {
+			position: fixed;
+			font-size: 100px;
+			top: 50%;
+			transform: translateY(-50%);
+		}
+		.control>#go-left {
+			left: 30px;
+		}
+		.control>#go-right {
+			right: 30px;
+		}
+		.left-active,
+		.right-active {
+			color: rgb(50,200,200)!important;
+		}
+		.circles {
+			position: fixed;
+			bottom: 40px;
+			left: 50%;
+			transform: translateX(-50%);
+			min-width: 20%;
+			text-align: center;
+		}
+		.active {
+			background: rgb(50,200,200)!important;
+		}
+		.circles>span {
+			display: inline-block;
+			width: 30px;
+			height: 30px;
+			border-radius: 50%;
+			background: #aaa;
+			margin-left: 10px;
+			vertical-align: middle;
+		}
+		.circles>span:first-child {
+			margin-left: 0;
+		}
+		.ct {
+			width: 70%;
+			height: 50%;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%,-50%);
+			padding: 50px;
+			border-radius: 20px;
+			background: rgba(50,200,150,0.8)
+									url(wea-bg.jpg) no-repeat;
+			background-size: cover;
+		}
+		.ct2 {
+			position: relative;
+			height: 100%;
+			width: 100%;
+			overflow: hidden;
+		}
+		.ct .content {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+		}
+		.ct .inner {
+			height: 100%;
+			width: 100%;
+			position: relative;
+			float: left;
+		}
+		.inner>.close {
+			position: absolute;
+			right: 0px;
+			top: -10px;
+			font-size: 50px;
+			color: rgb(50,200,200);
+			cursor: pointer;
+		}
+		.today-wea,.future {
+			width: calc(50% - 1px);
+			float: left;
+			text-align: center;
+		}
+		.future {
+			border-left: 1px solid #aaa;
+		}
+		.now-wea>h2 {
+			font-size: 35px;
+		}
+		.now-wea>p {
+			padding: 0 60px;
+			line-height: 25px;
+			font-size: 14px;
+		}
+		.now-wea>span {
+			font-size: 60px;
+			vertical-align: middle;
+		}
+		.now-wea>img {
+			height: 80px;
+			vertical-align: middle;
+		}
+		.wea-24h {
+			margin-top: 10px;
+		}
+		.all-day>hr {
+			width: 85%;
+			margin: 5px 0 0 35px;
+			border: none;
+			border-bottom: 1px dashed #aaa;
+		}
+		.all-day>.wea-24h>li {
+			display: inline-block;
+			float: left;
+			width: 16.6%;
+		}
+		.all-day>h3 {
+			text-align: left;
+			padding-left: 40px;
+		}
+		.wea-24h>li>h4 {
+			margin-bottom: 10px;
+			font-weight: lighter;
+			font-size: 14px;
+		}
+		.wea-24h>li>img {
+			height: 35px;
+		}
+		.wea-24h>li>span {
+			display: block;
+		}
+		.future>.list {
+			font-size: 14px;
+			line-height: 30px;
+		}
+		.future>.list .wind,
+		.future>.list .tem,
+		.future>.list img {
+			margin-left: 40px;
+			vertical-align: middle;
+		}
+		.future>.list .pm,
+		.future>.list .span:first-child {
+			margin-left: 0;
+		}
+		.future>.list img {
+			display: inline-block;
+			height: 30px;
+		}
+
+		/*modal-tab*/
+		#addWea {
+			position: fixed;
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			display: none;
+			background: rgba(100,100,100,0.95);
+			z-index: 1;
+		}
+		#addWea>b {
+			position: absolute;
+			right: 30px;
+			font-size: 70px;
+			color: rgb(50,200,200);
+			font-weight: lighter;
+			cursor: pointer;
+		}
+		#addWea>input {
+			display: block;
+			width: 30%;
+			margin: 20px auto 0;
+			padding-left: 10px;
+			border: none;
+			border-radius:7px;
+			line-height: 50px;
+			font-size: 20px;
+			background: #ccc;
+			outline: none;
+			color: #666;
+		}
+		#addWea>span {
+			display: block;
+			text-align: center;
+			display: none;
+			margin-top: 20px;
+		}
+		#addWea>ul {
+			width: 30%;
+			margin: 0 auto;
+			padding-left: 10px;
+			border-radius:7px;
+			font-size: 16px;
+			line-height: 30px;
+			background: #333;
+		}
+		#addWea>ul>li {
+			color: white;
+			cursor: pointer;
+		}
+	</style>
+</head>
+<body>
+	<div id="cover"></div>
+	<div id="wrap">
+		<div class="control">
+			<span id="add">+</span>
+			<span id="go-left"><</span>
+			<span id="go-right">></span>
+		</div>
+		<div class="circles">
+			<span class="active"></span>
+			
+		</div>
+		<div id="addWea">
+			<b>x</b>
+			<input type="text" placeholder="输入城市拼音，如：shanghai，beijing"></input>
+			<span>加载中……</span>
+			<ul>
+			</ul>
+		</div>
+		<div class="ct">
+			<div class="ct2">
+				<div class="content clearfix">
+					<div class="inner clearfix">
+						<span class="close">x</span>
+						<div class="today-wea">
+							<div class="now-wea">
+								<h2>--市</h2>
+								<p>--</p>
+								<span class="tem">--°</span>
+								<img src="">
+							</div>
+							<div class="all-day">
+								<h3>星期二 今天</h3><hr>
+								<ul class="wea-24h clearfix">
+									<li>
+										<h4>现在</h4>
+										<img src="" alt="">
+										<span>--°</span>
+									</li>	
+									<li>	
+										<h4>下午12时</h4>
+										<img src="" alt="">
+										<span>--°</span>
+									</li>	
+									<li>	
+										<h4>下午3时</h4>
+										<img src="" alt="">
+										<span>--°</span>
+									</li>	
+									<li>	
+										<h4>下午6时</h4>
+										<img src="" alt="">
+										<span>--°</span>
+									</li>	
+									<li>
+										<h4>下午9时</h4>
+										<img src="" alt="">
+										<span>--°</span>
+									</li>	
+									<li>	
+										<h4>上午12时</h4>
+										<img src="" alt="">
+										<span>--°</span>
+									</li>
+								</ul>
+							</div>
+						</div>
+						<div class="future">
+							<ul class="list">
+								<li>
+									<span>星期三</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+								<li>
+									<span>星期四</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+								<li>
+									<span>星期五</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+								<li>
+									<span>星期六</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+								<li>
+									<span>星期日</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+								<li>
+									<span>星期一</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+								<li>
+									<span>星期二</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+								<li>
+									<span>星期三</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+								<li>
+									<span>星期四</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+								<li>
+									<span>星期五</span>
+									<img class="am" src="" alt="">
+									<img class="pm" src="">
+									<span class="wind">风力--级</span>
+									<span class="tem">--°/--°</span>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			
+		</div>
+	</div>
+	
+
+	
+	<script type="text/javascript">
+/*---------------------刷新时自动获取当前IP天气--------------------------*/
+	$.get('//weixin.jirengu.com/weather/ip').done(function(rel){
+		$.get('//weixin.jirengu.com/weather/cityid?location='+rel.data).done(function(rel2){
+
+			setCity(rel2.results[0].name,0)
+
+			$.get('//weixin.jirengu.com/weather/now?cityid='+rel2.results[0].id).done(function(rel3){
+
+				setToday (rel3.weather[0],0)
+			})
+
+			$.get('//weixin.jirengu.com/weather/future24h?cityid='+rel2.results[0].id).done(function(rel4){
+				set24h(rel4,0)
+			})
+		})
+	})
+/*-----------------------------设置天气函数----------------------------------*/
+		var codeImg = '//weixin.jirengu.com/images/weather/code/'
+		function setToday (obj,index) {
+			$('.inner').eq(index).find('.now-wea>.tem').text(obj.now.temperature+'°')
+			$('.inner').eq(index).find('.now-wea>p').text(obj.today.suggestion.uv.details)
+			$('.inner').eq(index).find('.now-wea>img').attr('src',codeImg+obj.now.code+'.png')
+			var $list = $('.inner').eq(index).find('.future>.list>li')
+			$list.each(function (ind) {
+				$(this).find('.am').attr('src',codeImg + obj.future[ind].code1 + '.png')
+				$(this).find('.pm').attr('src',codeImg + obj.future[ind].code2 + '.png')
+				$(this).find('.wind').text(obj.future[ind].wind)
+				$(this).find('.tem').text(obj.future[ind].high+'°/'+obj.future[ind].low+'°')
+			})
+		}
+
+		function setCity (cityName,index) {
+			$('.inner').eq(index).find('.now-wea>h2').text(cityName+'市')
+		}
+
+		function set24h (obj,index) {
+			$('.inner').eq(index).find('.wea-24h>li').each(function (ind) {
+				$(this).find('img').attr('src',codeImg + obj.hourly[8+ind*3].code + '.png')
+				$(this).find('span').text(obj.hourly[8+ind*3].temperature + '°')
+			})
+		}
+
+
+/*---------------------------------面板控制--------------------------------------*/
+
+
+
+/*----------------'+'按钮弹出搜索框-------------------*/
+
+
+
+		$('.control>#add').click(function () {
+			/*----------------如果当前面板为空，刷新页面获取当前天气-----------------*/
+			if($('.content>.inner').length === 0){
+				location.reload()
+				return
+			}else{
+				/*-------------如果不为空，有模板，就走流程-------------------------------*/
+
+				$('#addWea').css('display','block')
+			}
+		})
+
+
+
+/*----------------'x'按钮隐藏搜索框-------------------*/
+
+		$('#addWea>b').click(function () {
+			$('#addWea').css('display','none')
+		})
+
+		var timer2 = null,timer3 = null,circlesNum = 0
+		/*--------------加定时器防止重复点击-----------------------*/
+/*----------------------'<'按钮左滑-------------------------*/
+		$('.control>#go-left').click(function () {
+
+			if(timer2){ clearTimeout(timer2) }
+			timer2 = setTimeout(function(){
+
+
+
+
+				var $left = parseInt($('.content').css('left'))
+				var $width = parseInt($('.content').css('width'))
+				var $length = $('.inner').length
+				if(-1*$left < $width*(($length-1)/$length)-10){
+					$('.circles>span').eq(1+circlesNum).addClass('active').siblings('span').removeClass('active')
+					circlesNum += 1
+					$('.control>#go-right').addClass('right-active')
+					if(circlesNum+1 === $('.circles>span').length){
+						$('.control>#go-left').removeClass('left-active')
+					}
+					$('.content').animate({
+						left : '-=' + (1/$length)*$width + 'px'
+					})
+				}
+			},500)
+
+
+
+		})
+/*----------------------'>'按钮右滑-------------------------*/
+		$('.control>#go-right').click(function () {
+
+			if(timer3){ clearTimeout(timer3) }
+			timer3 = setTimeout(function(){
+				var $left = parseInt($('.content').css('left'))
+				var $width = parseInt($('.content').css('width'))
+				var $length = $('.inner').length
+				if($left < -10){
+					$('.circles>span').eq(-1+circlesNum).addClass('active').siblings('span').removeClass('active')
+					circlesNum -= 1
+					$('.control>#go-left').addClass('left-active')
+					if(circlesNum === 0){
+						$('.control>#go-right').removeClass('right-active')
+					}
+					$('.content').animate({
+						left : '+=' + (1/$length)*$width + 'px'
+					})
+				}
+			},500)
+
+
+			
+		})
+/*----------------------'x'按钮删除当前显示天气-----------------------------*/
+		$('.content').on('click','.close',function () {
+			$('.addWea>input').css('display','none')
+			$('.addWea').css('display','block')
+			$('.addWea>span').css('display','block')
+
+			var $length = $('.inner').length
+			var $width = parseInt($('.content').css('width'))
+			var $parent = $(this).parents('.inner')
+			/*-------------------如果只剩下一个面板了，直接删------------------*/
+			if($length === 1){
+				$parent.remove()
+				$('.circles>span').remove()
+				return
+			}else if($length === 3){
+				if($parent.index()===0){$('.control>#go-right').removeClass('right-active')}else{
+					$('.control>#go-left').removeClass('left-active')
+				}	
+			}else if($length === 2){
+				$('.control>#go-right').removeClass('right-active')
+				$('.control>#go-left').removeClass('left-active')
+			}
+			/*---------------如果只剩下多于一个面板，加动画效果------------------*/
+			if($parent.index() === $length-1){
+				console.log($parent.index())
+				console.log($length)
+				$('.circles>span:first').remove()
+				circlesNum -= 1
+/*				if($('.circles>span').length===1){
+					$('.control>#go-left').removeClass('left-active')
+					$('.control>#go-right').removeClass('right-active')
+				}else if($('.circles>span').length===2){
+
+				}*/
+				$('.content').animate({
+					left : '+=' + (1/$length)*$width + 'px'
+				},function(){
+					$parent.remove()
+				})
+			}else {
+				$('.content').animate({
+					left : '+=' + (1/$length)*$width + 'px'
+				},1,function(){
+					$('.circles>span:last').remove()
+					/*if($('.circles>span').length===1){
+						$('.control>#go-right').removeClass('right-active')
+						$('.control>#go-left').removeClass('left-active')
+					}*/
+				})
+				$('.content').animate({
+					left : '-=' + (1/$length)*$width + 'px'
+				},function(){
+					$parent.remove()
+				})
+				$parent.remove()
+			}
+			
+			$('.content').css('width',100*($length-1) + '%')
+			$('.inner').css('width',100/($length-1) + '%')
+
+			$('.addWea').css('display','none')
+			$('.addWea>input').css('display','block')
+			$('.addWea>span').css('display','none')
+
+		})
+
+
+
+
+
+/*-------------------------添加城市---------------------------*/
+		var timer1 = null
+		$('#addWea>input').keyup(function () {
+			$('#addWea>ul').empty()
+			var $that = $(this)
+			if(timer1){ clearTimeout(timer1) }
+			timer1 = setTimeout(function(){
+				$('#addWea>span').css('display','block')
+				$.get('//weixin.jirengu.com/weather/cityid?location=' + $that.val()).done(function(rel5){
+					$('#addWea>span').css('display','none')
+					addList(rel5.results)
+				})
+			},2000)
+		})
+
+		$('#addWea>ul').on('click','li',function(){
+			$('#addWea>ul').empty()
+			$('#addWea>span').css('display','block')
+			$('#addWea>input').attr('disabled','true')
+			var $length = $('.inner').length
+			var $that = $(this)
+			
+
+			$.get('//weixin.jirengu.com/weather/now?cityid='+$(this).attr('id')).done(function(rel3){
+
+				var cloneInner = $('.inner')[0].cloneNode(true)
+				$('.content').append($(cloneInner))
+				
+				setToday (rel3.weather[0],$length)
+			})
+
+			$.get('//weixin.jirengu.com/weather/future24h?cityid='+ $(this).attr('id')).done(function(rel4){
+				set24h(rel4,$length)
+				setCity($that.text(),$length)
+			})
+
+
+			$('.content').css('width',100*($length+1)+'%')
+			$('.inner').css('width',100/($length+1)+'%')
+
+
+			$('.circles').append($('<span></span>'))
+			$('.control>#go-left').addClass('left-active')
+
+
+			$('#addWea>span').css('display','none')
+			$('#addWea>input').removeAttr('disabled').val('')
+			$('#addWea').css('display','none')
+		})
+
+
+/*---------------------城市下拉列表----------------------*/
+		function addList(arr){
+			var fragment = document.createDocumentFragment()
+			for(var i = 0;i < arr.length;i++){
+				($(fragment)).append($('<li id=' + arr[i].id + '>' + arr[i].name + '</li>'))
+			}
+			($('#addWea>ul')).append($(fragment))
+		}
+	</script>
+</body>
+</html>
